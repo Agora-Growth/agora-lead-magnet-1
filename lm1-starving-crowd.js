@@ -1,4 +1,4 @@
-/*! Agora Growth · Lead Magnet 1 · Encuentra tu Starving Crowd · v1.0
+/*! Agora Growth · Lead Magnet 1 · Encuentra tu Starving Crowd · v1.1
  *  Se monta solo dentro de <div id="ag-lm1"></div>.
  *  Configuración: define window.AG_LM1_CONFIG ANTES de cargar este script (ver DEFAULTS abajo).
  */
@@ -20,6 +20,8 @@
       c: { headline: 'El diagnóstico que te dice a quién sí perseguir', accent: '(y a quién dejar de perseguir).' }
     },
     sub: 'Compara hasta 3 segmentos en 2 minutos. Descubre cuál es tu verdadero Starving Crowd — y por qué.',
+    // false = sin CTA de venta (ni en pantalla ni en el PDF). Útil mientras el tool sea solo para alumnos graduados.
+    showCta: true,
     sprint: {
       url: 'https://www.agoragrowth.com/',   // Landing del Sprint Ejecutivo
       waitlistUrl: '',                        // Lista de espera (si vacío, usa sprint.url)
@@ -472,7 +474,7 @@
   /* ===================== PANTALLAS ===================== */
   function renderIntro() {
     show(
-      '<span class="aglm-pill">Diagnóstico gratuito · 2 min</span>' +
+      '<span class="aglm-pill">' + (CFG.showCta ? 'Diagnóstico gratuito · 2 min' : 'Diagnóstico · 2 min') + '</span>' +
       '<h1 class="aglm-h1">' + esc(VARIANT.headline) + '<span>' + esc(VARIANT.accent) + '</span></h1>' +
       '<p class="aglm-lead">' + esc(CFG.sub) + '</p>' +
       '<ul class="aglm-checks"><li>Compara 2 o 3 industrias o tipos de cliente</li><li>5 criterios objetivos, no intuición</li><li>Resultado al instante, sin registrarte</li></ul>' +
@@ -612,11 +614,12 @@
 
       '<div class="aglm-sec" data-pdf-sec>' + pdf + '</div>' +
 
+      (CFG.showCta ? (
       '<div class="aglm-sec"><div class="aglm-cta"><span class="aglm-pill aglm-pill--lime">Lo que sigue</span>' +
       '<h2 class="aglm-h2">' + (v.type === 'none' ? 'Encuentra el mercado correcto, y véndele.' : 'Ya sabes a quién perseguir. Ahora, ¿cómo le vendes?') + '</h2>' +
       '<p>' + esc(nextText(v)) + '</p>' +
       '<div class="aglm-actions" style="margin-top:20px"><a class="aglm-btn aglm-btn--lime" href="' + esc(sp.url) + '" target="_blank" rel="noopener" data-act="cta">' + esc(sp.label) + '</a></div>' +
-      '<p class="aglm-urg">' + esc(sp.line) + '</p></div></div>' +
+      '<p class="aglm-urg">' + esc(sp.line) + '</p></div></div>') : '') +
 
       '<div class="aglm-restart"><button type="button" class="aglm-link" data-act="restart">Evaluar otros segmentos</button></div>'
     );
@@ -853,12 +856,14 @@
       '<h2 class="pdf-h2" style="font-size:20px;margin:20px 0 4px">Cómo se calculó</h2>' +
       '<div class="pdf-crit">' + crit + '</div>' +
       '</div>' +
+      (CFG.showCta ? (
       '<div class="pdf-cta"><span class="aglm-pill aglm-pill--lime">Lo que sigue</span>' +
       '<h2>' + (v.type === 'none' ? 'Encuentra el mercado correcto, y véndele.' : 'Ya sabes a quién perseguir. Ahora, ¿cómo le vendes?') + '</h2>' +
       '<p>' + esc(nextText(v)) + '</p>' +
       '<span class="btn" data-pdf-link>' + esc(sp.label) + ' →</span>' +
       '<p class="urg">' + esc(sp.line) + '</p>' +
-      '<div class="foot"><span>Agora Growth · Rev up Revenue</span><span>agoragrowth.com · 2/2</span></div></div>' +
+      '<div class="foot"><span>Agora Growth · Rev up Revenue</span><span>agoragrowth.com · 2/2</span></div></div>')
+      : '<div class="pdf-foot"><span>Agora Growth · Rev up Revenue</span><span>agoragrowth.com · 2/2</span></div>') +
       '</div>';
 
     return p1 + p2;
@@ -923,5 +928,5 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
-  window.AG_LM1 = { mount: mount, version: '1.0' };
+  window.AG_LM1 = { mount: mount, version: '1.1' };
 })();
