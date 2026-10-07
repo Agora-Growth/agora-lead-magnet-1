@@ -1,4 +1,4 @@
-/*! Agora Growth · Lead Magnet 1 · Encuentra tu Starving Crowd · v1.1
+/*! Agora Growth · Lead Magnet 1 · Encuentra tu Starving Crowd · v1.2
  *  Se monta solo dentro de <div id="ag-lm1"></div>.
  *  Configuración: define window.AG_LM1_CONFIG ANTES de cargar este script (ver DEFAULTS abajo).
  */
@@ -50,6 +50,7 @@
     return out;
   }
   var CFG = merge(DEFAULTS, window.AG_LM1_CONFIG);
+  var VERSION = '1.2';
 
   /* ===================== CONTENIDO: LOS 5 CRITERIOS ===================== */
   // El orden de PRIORITY decide desempates (qué pesa más cuando hay empate de puntos
@@ -134,11 +135,16 @@
     return new Promise(function (resolve, reject) {
       var existing = document.querySelector('script[data-aglm-src="' + src + '"]');
       if (existing && existing.getAttribute('data-loaded')) return resolve();
-      var s = existing || document.createElement('script');
+      if (existing) { // todavía cargando: esperar a que termine
+        existing.addEventListener('load', function () { resolve(); });
+        existing.addEventListener('error', function () { reject(new Error('No se pudo cargar ' + src)); });
+        return;
+      }
+      var s = document.createElement('script');
       s.src = src; s.async = true; s.setAttribute('data-aglm-src', src);
       s.onload = function () { s.setAttribute('data-loaded', '1'); resolve(); };
-      s.onerror = function () { reject(new Error('No se pudo cargar ' + src)); };
-      if (!existing) document.head.appendChild(s);
+      s.onerror = function () { if (s.parentNode) s.parentNode.removeChild(s); reject(new Error('No se pudo cargar ' + src)); };
+      document.head.appendChild(s);
     });
   }
 
@@ -733,6 +739,7 @@
     track('ag_lm1_step', { step: S.crit + 2, criterion: CRITERIA[S.crit].id });
     if (S.crit < 4) { S.crit++; renderCriterion(); return; }
     S.result = compute();
+    S.subId = null; // nuevo resultado = nuevo envío
     S.pdfUrl = null;
     var W = S.result.verdict.winner;
     track('ag_lm1_result', {
@@ -756,7 +763,9 @@
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { F['email'].classList.add('is-error'); err.textContent = 'Revisa tu correo, parece incompleto.'; F['email'].focus(); return; }
 
     S.lead = { name: name, email: email, company: company };
-    if (!F['website'].value) sendLead(); // honeypot: los bots llenan este campo oculto
+    S.bot = !!F['website'].value; // honeypot: los bots llenan este campo oculto
+    if (!S.subId) S.subId = 'lm1-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+    send('lead');
     track('ag_lm1_lead');
 
     var btn = form.querySelector('[data-pdf-btn]');
@@ -764,27 +773,34 @@
     btn.disabled = true;
     btn.innerHTML = '<span class="aglm-spin"></span> Generando tu PDF…';
 
-    makePdf().then(function (url) {
+    makePdf().then(function (out) {
       S.busy = false;
-      S.pdfUrl = url;
+      S.pdfUrl = out.url;
       track('ag_lm1_pdf_download');
       var sec = shell.querySelector('[data-pdf-sec]');
       if (sec) sec.innerHTML = pdfDoneHtml();
+      // Copia del PDF para Drive + notificación por correo (en segundo plano)
+      blobToBase64(out.blob).then(function (b64) {
+        send('pdf', { pdf_name: pdfName(), pdf_base64: b64 });
+      }).catch(function (ex2) {
+        send('pdf', { pdf_error: 'base64: ' + String(ex2 && ex2.message || ex2).slice(0, 120) });
+      });
     }).catch(function (ex) {
       S.busy = false;
       btn.disabled = false;
       btn.textContent = 'Intentar de nuevo';
       err.textContent = 'No pudimos generar el PDF en este navegador. Intenta de nuevo o ábrelo desde una computadora.';
-      track('ag_lm1_pdf_error', { message: String(ex && ex.message || ex).slice(0, 120) });
+      var msg = String(ex && ex.message || ex).slice(0, 120);
+      track('ag_lm1_pdf_error', { message: msg });
+      send('pdf', { pdf_error: msg }); // el equipo recibe la notificación aunque el PDF falle
       if (window.console) console.error('[AG LM1]', ex);
     });
   }
 
-  function sendLead() {
-    if (!CFG.endpoint) return;
+  function leadPayload() {
     var res = S.result, v = res.verdict;
-    var payload = {
-      tool: CFG.tool, variant: variantKey, submitted_at: new Date().toISOString(),
+    return {
+      tool: CFG.tool, version: VERSION, variant: variantKey, submission_id: S.subId, submitted_at: new Date().toISOString(),
       name: S.lead.name, email: S.lead.email, company: S.lead.company,
       verdict: v.type, verdict_title: v.title,
       winner: v.winner.name, winner_score: v.winner.total, winner_weakest: v.winner.weakest,
@@ -793,11 +809,28 @@
       }),
       page: window.location.href.split('#')[0], referrer: document.referrer || '', utm: utm()
     };
+  }
+
+  // type 'lead': se manda al instante (el lead queda guardado aunque cierren la pestaña).
+  // type 'pdf': mismo ID de envío + el PDF en base64; el Apps Script lo guarda en Drive y notifica por correo.
+  function send(type, extra) {
+    if (!CFG.endpoint || S.bot) return;
+    var body = JSON.stringify(merge(merge(leadPayload(), { type: type }), extra || {}));
     try {
-      // text/plain evita el preflight CORS; Apps Script lo lee en e.postData.contents
-      fetch(CFG.endpoint, { method: 'POST', mode: 'no-cors', keepalive: true, headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+      // text/plain evita el preflight CORS; Apps Script lo lee en e.postData.contents.
+      // keepalive solo en el lead: el navegador limita keepalive a ~64 KB y el PDF pesa más.
+      fetch(CFG.endpoint, { method: 'POST', mode: 'no-cors', keepalive: type === 'lead', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body })
         .catch(function () { });
     } catch (e) { }
+  }
+
+  function blobToBase64(blob) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function () { resolve(String(r.result).split(',')[1] || ''); };
+      r.onerror = function () { reject(r.error); };
+      r.readAsDataURL(blob);
+    });
   }
 
   function pdfName() {
@@ -905,7 +938,7 @@
             return window.html2canvas(page, { scale: scale, backgroundColor: '#f3f3f3', useCORS: true, logging: false, width: 794, height: 1123, windowWidth: 1200 })
               .then(function (canvas) {
                 if (idx > 0) pdf.addPage();
-                pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, PW, PH, undefined, 'FAST');
+                pdf.addImage(canvas.toDataURL('image/jpeg', 0.86), 'JPEG', 0, 0, PW, PH, undefined, 'FAST');
                 var link = page.querySelector('[data-pdf-link]');
                 if (link) {
                   var pr = page.getBoundingClientRect(), lr = link.getBoundingClientRect();
@@ -920,7 +953,7 @@
           var blob = pdf.output('blob');
           var url = URL.createObjectURL(blob);
           try { pdf.save(pdfName()); } catch (e) { }
-          return url;
+          return { url: url, blob: blob };
         });
       });
     });
@@ -928,5 +961,5 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
-  window.AG_LM1 = { mount: mount, version: '1.1' };
+  window.AG_LM1 = { mount: mount, version: VERSION };
 })();
