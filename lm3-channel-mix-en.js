@@ -1,4 +1,4 @@
-/*! Agora Growth · Lead Magnet 3 · Your Seeds, Nets & Spears mix (EN) · v1.0
+/*! Agora Growth · Lead Magnet 3 · Your Seeds, Nets & Spears mix (EN) · v1.1
  *  Mounts itself inside <div id="ag-lm3"></div>.
  *  Config: define window.AG_LM3_CONFIG BEFORE loading this script (see DEFAULTS).
  */
@@ -50,7 +50,7 @@
     return out;
   }
   var CFG = merge(DEFAULTS, window.AG_LM3_CONFIG);
-  var VERSION = '1.0';
+  var VERSION = '1.1';
   var EV = 'ag_lm3_'; // prefijo de eventos de analytics
 
   /* ===================== CONTENT ===================== */
@@ -63,13 +63,13 @@
   var CH_ORDER = ['seeds', 'nets', 'spears'];
   var MAIN_PRIORITY = ['seeds', 'spears', 'nets']; // main-channel tiebreaker
 
-  // Starting point by stage (Seeds / Spears / Nets order): 60/30/10 → 40/40/20 → 30/40/30.
+  // Starting point by stage (Seeds / Nets / Spears order): 60/30/10 → 40/40/20 → 30/40/30.
   var STAGES = {
-    temprana: { label: 'Early stage', short: 'early', base: { seeds: 60, spears: 30, nets: 10 },
-      next: 'Once you have more than 20 active clients, or your sales no longer depend only on your network, move to the growth mix: Seeds 40% · Spears 40% · Nets 20%.' },
-    crecimiento: { label: 'Growth stage', short: 'growth', base: { seeds: 40, spears: 40, nets: 20 },
-      next: 'Once you have someone dedicated to prospecting and consistent content working, move to the scale mix: Seeds 30% · Spears 40% · Nets 30%.' },
-    escala: { label: 'Scale stage', short: 'scale', base: { seeds: 30, spears: 40, nets: 30 },
+    temprana: { label: 'Early stage', short: 'early', base: { seeds: 60, nets: 30, spears: 10 },
+      next: 'Once you have more than 20 active clients, or your sales no longer depend only on your network, move to the growth mix: Seeds 40% · Nets 40% · Spears 20%.' },
+    crecimiento: { label: 'Growth stage', short: 'growth', base: { seeds: 40, nets: 40, spears: 20 },
+      next: 'Once you have someone dedicated to prospecting and consistent content working, move to the scale mix: Seeds 30% · Nets 40% · Spears 30%.' },
+    escala: { label: 'Scale stage', short: 'scale', base: { seeds: 30, nets: 40, spears: 30 },
       next: 'You’re already on the scale mix. The next step isn’t changing the percentages but measuring each channel: cost per lead and close rate per channel, every month.' }
   };
   var STAGE_BY_CLIENTS = ['temprana', 'crecimiento', 'crecimiento', 'escala'];
@@ -197,7 +197,7 @@
     var stageKey = STAGE_BY_CLIENTS[A[0]], stage = STAGES[stageKey];
     var raw = { seeds: stage.base.seeds, nets: stage.base.nets, spears: stage.base.spears };
     var reasons = ['With ' + CLIENTS_TXT[A[0]] + ' active clients you’re in the ' + stage.label.toLowerCase() + ': the starting point is Seeds ' +
-      stage.base.seeds + '% · Spears ' + stage.base.spears + '% · Nets ' + stage.base.nets + '%.'];
+      stage.base.seeds + '% · Nets ' + stage.base.nets + '% · Spears ' + stage.base.spears + '%.'];
     for (var i = 1; i < QUESTIONS.length; i++) {
       var o = QUESTIONS[i].opts[A[i]];
       Object.keys(o.d).forEach(function (k) { raw[k] += o.d[k]; });
@@ -802,7 +802,7 @@
       '<h2 class="pdf-h2" style="margin-top:14px">One action per channel</h2>' + acts +
       '<div class="pdf-box"><h3>When to change your mix</h3><p style="margin:0">' + esc(R.stage.next) + '</p></div>' +
       '<div class="pdf-box"><h3>Your 5 answers</h3><div class="pdf-answers">' + answers + '</div></div>' +
-      '<p style="font-size:11.5px;color:#5b5f6a;margin-top:12px">How it’s calculated: your number of clients sets the stage and its base mix (early 60/30/10, growth 40/40/20, scale 30/40/30, in Seeds/Spears/Nets order); your other 4 answers adjust it. Minimum 5% per channel, rounded to multiples of 5. Seeds, Nets and Spears channels from Predictable Revenue (Aaron Ross); the percentages by stage are Agora Growth’s framework.</p>' +
+      '<p style="font-size:11.5px;color:#5b5f6a;margin-top:12px">How it’s calculated: your number of clients sets the stage and its base mix (early 60/30/10, growth 40/40/20, scale 30/40/30, in Seeds/Nets/Spears order); your other 4 answers adjust it. Minimum 5% per channel, rounded to multiples of 5. Seeds, Nets and Spears channels from Predictable Revenue (Aaron Ross); the percentages by stage are Agora Growth’s framework.</p>' +
       '</div>' +
       (CFG.showCta ? (
         '<div class="pdf-cta"><span class="aglm-pill aglm-pill--lime">What’s next</span>' +
