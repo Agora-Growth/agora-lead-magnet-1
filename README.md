@@ -17,3 +17,16 @@ URL de cada script (versión fija por release):
 Los envíos llegan al Apps Script del Sheet "LMT1" (una pestaña por tool). Las versiones en inglés mandan `lang: 'en'` y caen en la misma pestaña con Idioma = Inglés.
 
 Las versiones en inglés se generan a partir de las de español (misma lógica, solo cambian los textos).
+
+## Workbook del Sprint Ejecutivo
+
+Carpeta `workbook/`: app con login para participantes (llenar, autoguardado, descargar PDF) y panel de admin (cohortes, altas con PIN, avance).
+
+| Página | Contenedor | Config |
+| --- | --- | --- |
+| Participantes | `<div id="ag-wb">` | `window.AG_WB_CONFIG = { mode: 'participant', endpoint }` |
+| Panel de admin | `<div id="ag-wb">` | `window.AG_WB_CONFIG = { mode: 'admin', endpoint }` |
+
+Script: `https://cdn.jsdelivr.net/gh/Agora-Growth/agora-lead-magnet-1@<tag>/workbook/workbook.min.js`. Las fuentes del PDF (`workbook/fonts`, licencia SIL OFL) se cargan desde la misma versión.
+
+El contenido del workbook (preguntas, prompts, FAQs, glosario) y los datos viven en el Apps Script privado del Sheet del workbook, no en este repo: solo se entregan a usuarios con sesión.
